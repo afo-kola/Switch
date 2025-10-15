@@ -1,0 +1,129 @@
+buildscript {
+    repositories {
+        maven(){
+            url "https://nexus.quintoandar.com.br/repository/maven-public/"
+        }
+        mavenCentral()
+        maven() {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenLocal()
+    }
+}
+
+plugins {
+    id 'java'
+    id 'java-test-fixtures'
+    id "org.springframework.boot" version "${springBootVersion}" apply false
+    id "org.openapi.generator" version "${openApiGeneratorPlugin}"
+    id "com.github.ben-manes.versions" version "${versionsPluginVersion}"
+    id "com.atkinsondev.opentelemetry-build" version "${openTelemetryPluginVersion}"
+    id "backendservices.conventions.java-conventions"
+    id "backendservices.conventions.deployment"
+}
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'java-test-fixtures'
+    apply plugin: 'idea'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: "com.github.ben-manes.versions"
+
+
+    group = 'br.com.quintoandar.chatmanager'
+
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+
+    repositories {
+        maven(){
+            url "https://nexus.quintoandar.com.br/repository/maven-public/"
+        }
+        mavenCentral()
+        maven() {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenLocal()
+    }
+
+    bootJar {
+        enabled = false
+    }
+
+    dependencies {
+        implementation "org.apache.commons:commons-lang3:${apacheCommonsLangVersion}"
+        implementation "net.logstash.logback:logstash-logback-encoder:${logbackEncoderVersion}"
+
+        implementation "com.github.spotbugs:spotbugs-annotations:${spotbugsVersion}"
+        implementation "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        implementation "org.projectlombok:lombok-mapstruct-binding:${lombokMapstructBindingVersion}"
+
+        implementation "org.mapstruct:mapstruct:${mapStructVersion}"
+        annotationProcessor "org.mapstruct:mapstruct-processor:${mapStructVersion}"
+
+        testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+        testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+        testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
+        testImplementation "com.github.npathai:hamcrest-optional:${hamcrestOptionalVersion}"
+
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    }
+
+    dependencyManagement {
+      imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "io.awspring.cloud:spring-cloud-aws-dependencies:${springCloudAwsVersion}"
+      }
+    }
+
+    afterEvaluate {
+        pmd {
+            toolVersion = "${pmdPluginVersion}"
+            ruleSetFiles = files("$rootProject.projectDir.absolutePath/config/pmd/pmdRuleset.xml")
+            ruleSetConfig = null
+            ruleSets = []
+            consoleOutput = true
+        }
+        spotbugs {
+            toolVersion = "${spotbugsVersion}"
+            excludeFilter = file("$rootProject.projectDir.absolutePath/config/spotBugs/findbugs-exclude.xml")
+        }
+        checkstyle {
+            toolVersion = "${checkstylePluginVersion}"
+            configFile = file("$rootProject.projectDir.absolutePath/config/checkstyle/checkstyle.xml")
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.fork = true
+    options.incremental = true
+}
+
+wrapper {
+    gradleVersion = "${gradleWrapperPluginVersion}"
+    distributionType = Wrapper.DistributionType.ALL
+}
+
+openTelemetryBuild {
+    endpoint = "https://build-collector.apps.core-prd.habitat.zone/api/v2/spans"
+    exporterMode = com.atkinsondev.opentelemetry.build.OpenTelemetryExporterMode.ZIPKIN
+    serviceName = "chat-manager-build"
+}
+
+deploymentGroupConfig {
+    enableSentryRelease = true
+    sentry_project = 'chat-manager'
+    enableSchemaSpyGeneration = true
+    schemaspy_db_type = 'pgsql'
+    schemaspy_db_name = 'chatmanager'
+    schemaspy_db_host = 'chatmanager.db.core-prd.habitat.zone'
+    schemaspy_db_exclude = '*_aud'
+    schemaspy_vault_db_role  = 'prod-readonly-chatmanager'
+    enableCINotification = true
+    notification_space = 'chats-team-notifications'
+}
