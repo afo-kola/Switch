@@ -50,7 +50,7 @@
     "winston": "^3.18.3"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.34.4"
+    "@backstage/cli": "^0.35.0"
   },
   "resolutions": {
     "jsonpath-plus": "^10.3.0"
