@@ -28,11 +28,11 @@ export class AppController {
 
   // VULNERABILITY 2: Dangerous Use of Eval
   // TEST: POST {"code": "process.exit()"}
-  @Post("/calculate")
+ @Post("/calculate")
   calculate(@Body("code") userInput: string, @Res() res: Response) {
     try {
-      // BAD: eval() executes any string as JavaScript
-      const result = eval(userInput);
+      // GOOD: math.evaluate() safely parses math expressions without executing JS code
+      const result = math.evaluate(userInput);
       res.send({ result });
     } catch (e) {
       res.status(HttpStatus.BAD_REQUEST).send("Error executing code");
