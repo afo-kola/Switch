@@ -4,7 +4,7 @@
   "description": "A project for reachability testing",
   "main": "dist/main.js",
   "dependencies": {
-    "@nestjs/common": "^10.3.0",
+    "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^10.3.0",
     "@nestjs/config": "^3.1.1",
     "@nestjs/platform-express": "^10.3.0",
